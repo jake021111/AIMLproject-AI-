@@ -24,12 +24,17 @@ ai/
 ## 파이프라인 순서
 
 1. **데이터 준비 (진행 필요 — TODO)**
-   - AI Hub 실내 공간 객체 인식 데이터셋 다운로드
-   - `label_map.yaml`의 `aihub:` 섹션을 실제 원본 카테고리명으로 채우기
-     (⚠️ 아직 원본 라벨 스키마를 확인하지 못해 placeholder 상태. CLAUDE.md §13 규칙 5에 따라
-     추측으로 채우지 않았다. 데이터 받으면 라벨 JSON을 같이 보고 채우자.)
+   - **AI Hub "베리어프리존(장애물 없는 생활공간) 주행영상"** (dataSetSn=186) 다운로드 승인 신청
+     → 그중 **공간정보(실내) 서브셋**만 사용. chair/pillar/trash_can/signage_stand/stairs/
+     elevator_door/door/vending_machine/tactile_paving 커버.
+     ("인도보행 영상" dataSetSn=189는 실외 보도 전용이라 도메인 불일치로 제외함 — 클래스명은
+     겹치지만 배경/조명/각도가 실내 매장·역사 환경과 달라서 오히려 정확도를 해칠 수 있다.)
    - COCO 2017에서 person / chair / dining table 서브셋 추출
+   - `label_map.yaml`의 `aihub_186_indoor:` 섹션은 AI Hub 소개 페이지 기준 추정 카테고리명이다.
+     실제 다운로드한 라벨 JSON/XML의 정확한 문자열로 검증/교체할 것 (CLAUDE.md §13 규칙 5).
    - 두 소스를 `label_map.yaml` 기준으로 YOLO txt 포맷(`class_id cx cy w h`, 0~1 정규화)으로 변환
+   - **escalator / automatic_door / kiosk / counter**는 매칭되는 AI Hub 데이터셋을 찾지 못했다
+     (`label_map.yaml`의 `unresolved_classes`). 직접 촬영 + 수동 라벨링으로 보강 필요.
 
 2. **분할**
    ```bash
@@ -74,5 +79,7 @@ pip install -r requirements.txt
 
 ## 알려진 미해결 사항
 
-- AI Hub 데이터셋 원본 라벨 스키마 미확인 → `label_map.yaml`의 `aihub:` 섹션 채우기 필요
-- kiosk, tactile_paving 등은 COCO에 없는 클래스 → AI Hub 의존 + 직접 촬영 보강 검토 필요
+- AI Hub 186 다운로드 승인 대기 중 → 실제 라벨 스키마로 `label_map.yaml`의
+  `aihub_186_indoor:` 섹션 검증 필요
+- **escalator / automatic_door / kiosk / counter**: 매칭되는 공개 데이터셋 없음 →
+  직접 촬영 + 수동 라벨링 필요
