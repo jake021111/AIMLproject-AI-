@@ -1,0 +1,141 @@
+# 클래스 정의 단일 소스(Single Source of Truth).
+# lib/core/constants/class_labels.dart (Flutter 앱) 과 반드시 1:1로 동기화할 것.
+# 필드를 바꾸면 이 파일과 Dart 파일을 같이 수정한다 (CLAUDE.md §13 규칙 4).
+
+classes:
+  - id: 0
+    label: chair
+    korean: 의자
+    category: collision_static
+    priority: high
+    real_width_m: 0.50
+    distance_reliable: true
+    conf_threshold: 0.35
+
+  - id: 1
+    label: table
+    korean: 테이블
+    category: collision_static
+    priority: high
+    real_width_m: 1.20
+    distance_reliable: true
+    conf_threshold: 0.35
+
+  - id: 2
+    label: pillar
+    korean: 기둥
+    category: collision_static
+    priority: high
+    real_width_m: 0.50
+    distance_reliable: true
+    conf_threshold: 0.35
+
+  - id: 3
+    label: trash_can
+    korean: 쓰레기통
+    category: collision_static
+    priority: high
+    real_width_m: 0.40
+    distance_reliable: true
+    conf_threshold: 0.35
+
+  - id: 4
+    label: signage_stand
+    korean: 안내 표지판
+    category: collision_static
+    priority: high
+    real_width_m: 0.60
+    distance_reliable: true
+    conf_threshold: 0.35
+
+  - id: 5
+    label: person
+    korean: 사람
+    category: collision_dynamic
+    priority: high
+    real_width_m: 0.50
+    distance_reliable: true
+    conf_threshold: 0.35
+
+  - id: 6
+    label: stairs
+    korean: 계단
+    category: vertical_movement
+    priority: very_high
+    real_width_m: null   # bbox 폭 ↔ 실제 폭 대응 불가 (바닥에 깔린 넓은 영역)
+    distance_reliable: false
+    conf_threshold: 0.25
+
+  - id: 7
+    label: escalator
+    korean: 에스컬레이터
+    category: vertical_movement
+    priority: very_high
+    real_width_m: 1.00
+    distance_reliable: true
+    conf_threshold: 0.25
+
+  - id: 8
+    label: elevator_door
+    korean: 엘리베이터
+    category: vertical_movement
+    priority: very_high
+    real_width_m: 1.00
+    distance_reliable: true
+    conf_threshold: 0.25
+
+  - id: 9
+    label: door
+    korean: 문
+    category: entrance
+    priority: high
+    real_width_m: 0.90
+    distance_reliable: true
+    conf_threshold: 0.35
+
+  - id: 10
+    label: automatic_door
+    korean: 자동문
+    category: entrance
+    priority: high
+    real_width_m: 1.20
+    distance_reliable: true
+    conf_threshold: 0.35
+
+  - id: 11
+    label: kiosk
+    korean: 키오스크
+    category: facility
+    priority: medium
+    real_width_m: 0.60
+    distance_reliable: true
+    conf_threshold: 0.35
+
+  - id: 12
+    label: counter
+    korean: 카운터
+    category: facility
+    priority: medium
+    real_width_m: 1.50
+    distance_reliable: true
+    conf_threshold: 0.35
+
+  - id: 13
+    label: vending_machine
+    korean: 자판기
+    category: facility
+    priority: medium
+    real_width_m: 1.00
+    distance_reliable: true
+    conf_threshold: 0.35
+
+  - id: 14
+    label: tactile_paving
+    korean: 점자블록
+    category: walking_assist
+    priority: very_high
+    real_width_m: null
+    distance_reliable: false
+    conf_threshold: 0.25
+
+very_high_priority_classes: [stairs, escalator, elevator_door, tactile_paving]

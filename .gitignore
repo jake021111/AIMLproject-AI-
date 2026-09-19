@@ -1,0 +1,25 @@
+# 데이터셋 (용량 크고, 저작권/배포 이슈 있음 — Git에 올리지 않음)
+dataset/
+raw_dataset/
+*.jpg
+*.jpeg
+*.png
+!docs/**/*.png
+
+# 학습 산출물
+runs/
+*.pt
+*.onnx
+*.tflite
+*_saved_model/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

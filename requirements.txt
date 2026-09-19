@@ -1,0 +1,10 @@
+ultralytics>=8.1.0
+torch>=2.1.0
+torchvision>=0.16.0
+pyyaml>=6.0
+opencv-python-headless>=4.8.0
+numpy>=1.24.0
+
+# TFLite export(format=tflite)를 처음 실행할 때 ultralytics가 아래 의존성들을
+# (onnx, onnx2tf, tensorflow, sng4onnx, onnx_graphsurgeon 등) 자동으로 추가 설치한다.
+# 미리 넣지 않는 이유: 버전 조합이 ultralytics 버전에 따라 바뀌므로 자동 설치에 맡긴다.

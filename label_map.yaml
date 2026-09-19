@@ -1,0 +1,50 @@
+# AI Hub 데이터셋과 COCO 2017을 insight 15-class 체계로 통합하는 매핑 테이블.
+# (CLAUDE.md §7.1: 두 출처의 taxonomy가 다르므로 먼저 통합 매핑을 만든다)
+#
+# ⚠️ aihub 섹션은 자리표시자(placeholder)다.
+#    AI Hub 데이터셋을 실제로 내려받아 라벨 JSON/XML의 category name을 확인한 뒤
+#    key(왼쪽)를 원본 라벨명으로 교체해야 한다. 확인 전까지 scripts/prepare_dataset.py는
+#    이 파일의 TODO_ 접두사를 보고 에러를 낸다 (CLAUDE.md §13 규칙 5 — 모르면 추측하지 않는다).
+
+target_classes:
+  0: chair
+  1: table
+  2: pillar
+  3: trash_can
+  4: signage_stand
+  5: person
+  6: stairs
+  7: escalator
+  8: elevator_door
+  9: door
+  10: automatic_door
+  11: kiosk
+  12: counter
+  13: vending_machine
+  14: tactile_paving
+
+# COCO 2017 (80-class, ultralytics 0-index) → insight target class
+# 실제 겹치는 클래스는 이 3개뿐이다 (CLAUDE.md §15.3)
+coco:
+  0: person   # COCO 'person'       -> person
+  56: chair   # COCO 'chair'        -> chair
+  60: table   # COCO 'dining table' -> table
+
+# AI Hub 실내 공간 객체 인식 / 시각장애인 보행환경 데이터셋 매핑
+# TODO: 데이터셋 다운로드 후 실제 원본 카테고리명으로 교체할 것
+aihub:
+  "TODO_원본라벨_의자": chair
+  "TODO_원본라벨_테이블": table
+  "TODO_원본라벨_기둥": pillar
+  "TODO_원본라벨_쓰레기통": trash_can
+  "TODO_원본라벨_안내표지판": signage_stand
+  "TODO_원본라벨_사람": person
+  "TODO_원본라벨_계단": stairs
+  "TODO_원본라벨_에스컬레이터": escalator
+  "TODO_원본라벨_엘리베이터": elevator_door
+  "TODO_원본라벨_문": door
+  "TODO_원본라벨_자동문": automatic_door
+  "TODO_원본라벨_키오스크": kiosk
+  "TODO_원본라벨_카운터": counter
+  "TODO_원본라벨_자판기": vending_machine
+  "TODO_원본라벨_점자블록": tactile_paving
