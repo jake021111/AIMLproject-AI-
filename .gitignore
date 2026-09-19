@@ -1,10 +1,15 @@
 # 데이터셋 (용량 크고, 저작권/배포 이슈 있음 — Git에 올리지 않음)
 dataset/
 raw_dataset/
+data folder/
 *.jpg
 *.jpeg
 *.png
 !docs/**/*.png
+
+# AI Hub 원본 라벨(json/xml)도 데이터셋 취급 — 용량 크고 재다운로드 가능
+*.json
+!configs/*.json
 
 # 학습 산출물
 runs/

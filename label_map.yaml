@@ -7,11 +7,14 @@
 #     배경/조명/카메라 각도가 실내 매장·역사 환경과 달라 도메인 불일치를 일으킨다.
 #   - AI Hub "베리어프리존(장애물 없는 생활공간) 주행영상"(dataSetSn=186)만 채택한다.
 #     "노면정보"(실외 인도 상태)와 "공간정보"(실내 공간) 두 서브셋으로 나뉘는데,
-#     그중 공간정보 서브셋만 쓴다. 이미 YOLOv5 bbox 포맷.
+#     그중 공간정보 서브셋만 쓴다.
 #
-# ⚠️ aihub 섹션의 key는 AI Hub 데이터셋 소개 페이지에 공개된 명칭을 기준으로 적어둔 추정값이다.
-#    실제 라벨 JSON/XML을 열어 정확한 category name 문자열(공백, 영문 키 등)을 확인하고
-#    다르면 교체해야 한다 (CLAUDE.md §13 규칙 5 — 모르면 추측하지 않는다).
+# aihub_186 섹션은 실제 다운로드한 라벨 JSON을 파싱해 확인한 값이다 (추정 아님).
+# 검증 방법: Training/[라벨]2.서부산실내_베리어프리객체_1 폴더의 JSON 15,625개를 전수 스캔.
+# JSON 구조: {"images": {file_name, width, height}, "annotations": [{"id": "rectangle_N"|"polygon_N",
+#            "category_id": <아래 key>, "segmentation": [[x,y], ...]}], "category": [...]}
+#   - id가 "rectangle_"로 시작 -> segmentation은 [ [x1,y1], [x2,y2] ] (bbox 대각 꼭짓점 2개)
+#   - id가 "polygon_"으로 시작 -> segmentation은 다각형 꼭짓점 목록 -> min/max로 bbox 변환
 
 target_classes:
   0: chair
@@ -31,30 +34,64 @@ target_classes:
   14: tactile_paving
 
 # COCO 2017 (80-class, ultralytics 0-index) → insight target class
-# 실제 겹치는 클래스는 이 3개뿐이다 (CLAUDE.md §15.3). table은 AI Hub 소스가 없어 COCO 단독 의존.
+# table, person은 AI Hub 186에 아예 없는 카테고리라 COCO 단독 의존.
 coco:
   0: person   # COCO 'person'       -> person
   56: chair   # COCO 'chair'        -> chair
   60: table   # COCO 'dining table' -> table
 
-# AI Hub 186 "베리어프리존 주행영상" - 공간정보(실내) 서브셋 매핑
-# ⚠️ 데이터 다운로드 후 실제 라벨 파일의 정확한 category name으로 검증/교체할 것
-aihub_186_indoor:
-  "의자": chair          # 데이터셋 소개상 '휴게의자'
-  "기둥": pillar
-  "휴지통": trash_can
-  "안내표지판": signage_stand
-  "계단": stairs
-  "승강기": elevator_door
-  "문": door
-  "판매기": vending_machine
-  "점자블록": tactile_paving
-  # "점자표지판", "손잡이", "벽", "창문"은 15-class 체계에 없어 매핑하지 않음 (무시)
+# AI Hub 186 "베리어프리존 주행영상" 공간정보(실내) 서브셋 — 실제 category_id 매핑
+aihub_186:
+  # chair (5종 모두 통합)
+  chair_one: chair              # 일인용 의자 (3,355건)
+  chair_multi: chair            # 다인용 평의자 (633건)
+  chair_back: chair             # 등받이가 있는 휴게 의자 (610건)
+  chair_circular: chair         # 원형 의자 (230건)
+  chair_handle: chair           # 손잡이가 있는 휴게 의자 (159건)
+
+  pillar: pillar                 # 기둥 (3,456건)
+  trash_can: trash_can           # 휴지통 (898건)
+
+  # stairs (2종)
+  stair_normal: stairs           # 계단 (3,186건)
+  stair_broken: stairs           # 계단 파손 (33건)
+
+  # elevator_door (승강기 본체 + 출입문 모두 포함)
+  lift_door: elevator_door       # 승강기 출입문 (1,785건)
+  lift: elevator_door            # 승강기 (시설) (1,687건)
+
+  door_normal: door               # 문 (7,698건)
+  beverage_vending_machine: vending_machine   # 판매기 (184건)
+
+  # tactile_paving (점자블록, 4종)
+  brailleblock_dot: tactile_paving         # 점형블록 (4,703건)
+  brailleblock_line: tactile_paving        # 선형블록 (1,295건)
+  brailleblock_dot_broken: tactile_paving  # 점형블록 파손 (11건)
+  brailleblock_line_broken: tactile_paving # 선형블록 파손 (9건)
+
+  # signage_stand (방향 안내 표식 4종)
+  direction_sign_exit: signage_stand       # 출구표식 (225건)
+  direction_sign_right: signage_stand      # 오른쪽이동표식 (205건)
+  direction_sign_left: signage_stand       # 왼쪽이동표식 (203건)
+  direction_sign_straight: signage_stand   # 화살표(직진/후진) (165건)
+
+  # counter — "하부공간이 있는 접수대"가 실질적으로 카운터/안내데스크
+  reception_desk: counter        # (1,321건)
+
+  # ⚠️ sign_disabled_* (화장실표시판, 주차표지판 등 장애인 아이콘 표지)는
+  #    벽 부착형 소형 픽토그램이라 signage_stand(입간판형 안내판)와 성격이 달라 매핑 보류.
+  #    필요하면 나중에 판단해서 추가.
+
+# 이 데이터셋에 있지만 15-class 체계와 무관해 무시하는 카테고리 (검출 대상 아님, 참고용)
+# wall, floor_normal/broken, handle_*, window_*, sidegap_in/out, restspace, tierbump,
+# parkspace, walkway_*, paved_state_*, block_state_*, block_kind_good, ramp_*, steepramp,
+# sewer_*, fireshutter, continuity_*, weed, stone, mailbox, flowerbed, outcurb_rectangle,
+# enterrail, planecrosswalk_*, bump_slow, flatness_A, sign_disabled_*, braille_sign,
+# lift_button_* (승강기 버튼 자체는 별도 클래스가 아니라 lift/lift_door에 포함되는 것으로 간주)
 
 # 아직 확보한 데이터 소스가 없는 클래스 (CLAUDE.md §14 리스크 항목).
-# AI Hub에 전용 데이터셋을 찾지 못했다 — 직접 촬영 + 수동 라벨링으로 보강 예정.
 unresolved_classes:
-  - escalator
-  - automatic_door   # 일반 door와 구분되는 전용 데이터 없음
-  - kiosk            # 189 제외 후 다시 공백
-  - counter
+  - escalator        # AI Hub 186에 대응 category_id 없음
+  - automatic_door    # door_normal과 구분되는 별도 카테고리 없음
+  - kiosk             # 189 제외 후 공백. number_ticket_machine(번호표 발급기, 702건)이
+                       # 제일 비슷하지만 셀프주문/정보 키오스크와 개념이 달라 확정 매핑 보류 (검토 필요)
