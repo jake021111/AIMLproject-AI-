@@ -54,3 +54,6 @@ ade20k_raw/
 ade20k_subset/
 merged_dataset/
 dataset_v2/
+
+# 모델 기준 출력값은 이미지가 아니라 숫자라 공유해도 된다 (프론트 연동 검증용)
+!fixtures/model_outputs_v0.1.json

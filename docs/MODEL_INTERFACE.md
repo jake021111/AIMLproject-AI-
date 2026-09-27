@@ -23,7 +23,7 @@
 | mAP@0.5 | **0.826** | ≥ 0.70 |
 | veryHigh 평균 recall | **0.910** | ≥ 0.85 |
 
-탐지되는 클래스는 **10개**다 (§7 참조). 나머지 5개는 학습 데이터가 없어 탐지되지 않지만,
+탐지되는 클래스는 **9개**다 (§7 참조). 나머지 6개는 학습 데이터가 없어 탐지되지 않지만,
 **출력 채널은 15클래스(19채널) 그대로**이므로 앱 코드는 처음부터 15클래스 기준으로 짜면 된다.
 
 ---
@@ -214,6 +214,50 @@ final rect = Rect.fromLTRB(
 
 ---
 
+## 3.7 거리 추정 — 모델이 아니라 앱에서 계산한다
+
+**모델은 거리를 출력하지 않는다.** 출력은 `[1, 19, 8400]` (bbox 4 + 클래스 15)가 전부다.
+거리는 앱이 bbox 크기로부터 계산한다 (CLAUDE.md §6.2).
+
+```dart
+// 초점거리(픽셀) = (이미지폭/2) / tan(수평화각/2)
+final focalPx = (imageWidth / 2) / math.tan(_toRad(cameraFovDeg) / 2);
+
+// 거리(m) = (해당 클래스의 평균 실측 폭 × 초점거리) / bbox 픽셀 폭
+final distanceM = (realWidthM * focalPx) / bboxWidthPx;
+```
+
+- `cameraFovDeg`는 기기마다 다르고 `camera` 플러그인이 노출하지 않는다. **기본값 67°** 로 둔다.
+- 객체가 정면을 향한다고 가정하므로 **오차 ±30% 수준**이다. 반드시 `"약 2미터"` 처럼 근사임을 밝힌다.
+
+### 클래스별 실측 폭 (`realWidthM`)
+
+| id | label | 실측 폭(m) | 거리 안내 |
+|---|---|---|---|
+| 0 | chair | 0.50 | O |
+| 1 | table | 1.20 | O |
+| 2 | pillar | 0.50 | O |
+| 3 | trash_can | 0.40 | O |
+| 4 | signage_stand | 0.60 | O |
+| 5 | person | 0.50 | O |
+| 6 | stairs | — | **X** |
+| 7 | escalator | 1.00 | O |
+| 8 | elevator_door | 1.00 | O |
+| 9 | door | 0.90 | O |
+| 10 | automatic_door | 1.20 | O |
+| 11 | kiosk | 0.60 | O |
+| 12 | counter | 1.50 | O |
+| 13 | vending_machine | 1.00 | O |
+| 14 | tactile_paving | — | **X** |
+
+**`stairs`와 `tactile_paving`은 거리 계산을 건너뛴다.** 바닥에 깔린 넓은 영역이라
+bbox 폭과 실제 폭이 대응하지 않는다. 수치 없이 `"전방에 계단이 있습니다"` 형태로만 안내한다.
+
+> 원본 값은 AI 저장소 `configs/class_labels.yaml`이며, Flutter `class_labels.dart`와 1:1 동기화 대상이다.
+> Phase 3에서 ARCore Depth를 추가하면 이 비례식은 2순위 fallback이 된다 (CLAUDE.md §6.1).
+
+---
+
 ## 4. 파일 배치 (Flutter 측)
 
 ```
@@ -277,7 +321,7 @@ python scripts/onnx_to_tflite.py --onnx yolov8n.onnx
 | 단계 | 내용 | 클래스 | 상태 |
 |---|---|---|---|
 | 스텁 (COCO 80) | 디코드 로직 검증용 | 80 (COCO) | ✅ 완료 |
-| **v0.1** | AI Hub 실내 데이터로 학습한 첫 실모델 | **10** | ✅ **전달** (mAP@0.5 0.826) |
+| **v0.1** | AI Hub 실내 데이터로 학습한 첫 실모델 | **9** | ✅ **전달** (mAP@0.5 0.826) |
 | v1.0 | 15 클래스 전체 | 15 | 데이터 확보 후 |
 
 **v0.1 클래스별 성능 (test split)**
@@ -293,9 +337,13 @@ python scripts/onnx_to_tflite.py --onnx yolov8n.onnx
 | tactile_paving | 0.812 | 0.843 | veryHigh |
 | signage_stand | 0.499 | 0.562 | 학습 인스턴스 55개, 약함 |
 | chair | 0.429 | 0.414 | 학습 인스턴스 71개, 약함 |
-| table, person, escalator, automatic_door, kiosk, counter | — | — | **학습 데이터 없음 → 탐지 안 됨** |
+| counter | — | — | **학습 박스 1개뿐 → 사실상 탐지 안 됨** |
+| table, person, escalator, automatic_door, kiosk | — | — | **학습 데이터 없음 → 탐지 안 됨** |
 
-**v0.1에서 5개 클래스가 빠지는 이유:** AI Hub 186 데이터셋에 대응 카테고리가 없다.
+**v0.1에서 6개 클래스가 빠지는 이유:** AI Hub 186 데이터셋에 대응 카테고리가 없거나 양이 극소량이다.
+
+> ⚠️ 이전 문서에 '10개 탐지 / 5개 미탐'으로 적혀 있었으나 **9개 / 6개가 맞다.**
+> `counter`를 탐지 가능으로 셌는데, 학습 박스가 1개뿐이라 실제로는 잡히지 않는다.
 
 - `table`, `person` → COCO 2017에서 추출 (`scripts/fetch_coco_subset.py` 작성됨, 미실행)
 - `escalator`, `automatic_door`, `kiosk` → 공개 데이터셋 없음. 직접 촬영 + 라벨링 필요
@@ -350,3 +398,11 @@ fixtures/
 
 `bbox_norm` 은 **원본 이미지 기준** 0~1 정규화값이다 (letterbox 좌표계가 아니다).
 §3.4 역변환을 거친 앱의 최종 Rect와 `bbox_pixel` 을 비교하면 된다.
+
+### model_outputs_v0.1.json — 연동 검증의 기준값
+
+`expected_detections.json`은 **사람이 만든 정답**이라 모델이 그대로 맞히지 못한다.
+앱 연동이 맞는지 보려면 **`model_outputs_v0.1.json`과 비교해야 한다.**
+이건 배포 모델이 같은 이미지에서 실제로 내는 class/confidence/bbox이고,
+앱이 같은 숫자를 내면 전처리·디코드·NMS가 전부 맞는 것이다.
+(conf는 소수점 2자리, bbox는 ±2px 정도 차이는 정상이다 — 리사이즈 보간 차이)
