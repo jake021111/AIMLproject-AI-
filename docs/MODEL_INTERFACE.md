@@ -13,17 +13,18 @@
 | 클래스 순서 · 라벨 파일 | ✅ `configs/labels.txt` (§1) |
 | 입력 전처리 스펙 | ✅ §2 |
 | 출력 파싱 스펙 | ✅ §3 |
-| **학습된 실제 `.tflite`** | ✅ **v0.1 제공** — `best_int8_hybrid.tflite` (3.2MB, INT8) |
+| **학습된 실제 `.tflite`** | ✅ **v0.2 제공** — `insight_indoor15_v0.2_int8.tflite` (3.2MB, INT8) |
 | 테스트 이미지 + 정답 | ✅ `fixtures/` (§8) |
 
-**v0.1 실측 지표** (test split 156장 / 439박스)
+**v0.2 실측 지표** (v0.1과 동일한 AI Hub test split 156장 / 439박스)
 
-| 지표 | 결과 | 목표 |
-|---|---|---|
-| mAP@0.5 | **0.826** | ≥ 0.70 |
-| veryHigh 평균 recall | **0.910** | ≥ 0.85 |
+| 지표 | v0.1 | **v0.2** | 목표 |
+|---|---|---|---|
+| mAP@0.5 | 0.826 | **0.883** | ≥ 0.70 |
+| veryHigh 평균 recall | 0.910 | **0.863** | ≥ 0.85 |
 
-탐지되는 클래스는 **9개**다 (§7 참조). 나머지 6개는 학습 데이터가 없어 탐지되지 않지만,
+탐지되는 클래스는 **13개**다 (§7 참조). 나머지 2개(`automatic_door`, `kiosk`)는
+학습 데이터가 없어 탐지되지 않지만,
 **출력 채널은 15클래스(19채널) 그대로**이므로 앱 코드는 처음부터 15클래스 기준으로 짜면 된다.
 
 ---
@@ -320,25 +321,31 @@ python scripts/onnx_to_tflite.py --onnx yolov8n.onnx
 
 | 단계 | 내용 | 클래스 | 상태 |
 |---|---|---|---|
-| 스텁 (COCO 80) | 디코드 로직 검증용 | 80 (COCO) | ✅ 완료 |
-| **v0.1** | AI Hub 실내 데이터로 학습한 첫 실모델 | **9** | ✅ **전달** (mAP@0.5 0.826) |
+| 스텁 (COCO 80) | 디코드 로직 검증용 | 80 (COCO) | 완료 |
+| v0.1 | AI Hub 지하철 실내 데이터만 | 9 | 보관 (`release/archive/`) |
+| **v0.2** | + ADE20K·COCO 보강 | **13** | ✅ **현재 배포** (mAP@0.5 0.883) |
 | v1.0 | 15 클래스 전체 | 15 | 데이터 확보 후 |
+
+> **v0.1 → v0.2 교체 사유:** v0.1은 부산 지하철역 실내만 학습해서
+> 강의실·사무실 환경에서 `person`/`table`을 전혀 잡지 못하고 `chair`도 mAP 0.41로 약했다.
+> v0.2는 ADE20K·COCO를 보강해 이 환경까지 커버한다.
+> **앱 입장에서 달라지는 것은 없다** — shape·클래스 순서·크기 전부 동일하고 파일만 교체하면 된다.
 
 **v0.1 클래스별 성능 (test split)**
 
 | 클래스 | recall | mAP@0.5 | 비고 |
 |---|---|---|---|
-| trash_can | 0.972 | 0.989 | |
-| elevator_door | 0.919 | 0.977 | veryHigh |
-| stairs | 1.000 | 0.978 | veryHigh |
-| vending_machine | 0.935 | 0.973 | |
-| pillar | 0.885 | 0.906 | |
-| door | 0.857 | 0.789 | |
-| tactile_paving | 0.812 | 0.843 | veryHigh |
-| signage_stand | 0.499 | 0.562 | 학습 인스턴스 55개, 약함 |
-| chair | 0.429 | 0.414 | 학습 인스턴스 71개, 약함 |
-| counter | — | — | **학습 박스 1개뿐 → 사실상 탐지 안 됨** |
-| table, person, escalator, automatic_door, kiosk | — | — | **학습 데이터 없음 → 탐지 안 됨** |
+| elevator_door | 0.944 | 0.985 | veryHigh |
+| trash_can | 0.902 | 0.985 | |
+| stairs | 0.898 | 0.986 | veryHigh |
+| vending_machine | 0.949 | 0.964 | |
+| chair | 0.831 | **0.964** | v0.1 대비 0.414 → 0.964 |
+| pillar | 0.788 | 0.881 | |
+| tactile_paving | 0.748 | 0.843 | veryHigh |
+| door | 0.698 | 0.796 | |
+| signage_stand | 0.462 | 0.544 | 학습 인스턴스 88개, 약함 |
+| person / table / counter / escalator | — | — | AI Hub test셋에 인스턴스가 없어 지표 없음. **탐지는 된다** |
+| automatic_door, kiosk | — | — | **학습 데이터 없음 → 탐지 안 됨** |
 
 **v0.1에서 6개 클래스가 빠지는 이유:** AI Hub 186 데이터셋에 대응 카테고리가 없거나 양이 극소량이다.
 
@@ -402,7 +409,7 @@ fixtures/
 ### model_outputs_v0.1.json — 연동 검증의 기준값
 
 `expected_detections.json`은 **사람이 만든 정답**이라 모델이 그대로 맞히지 못한다.
-앱 연동이 맞는지 보려면 **`model_outputs_v0.1.json`과 비교해야 한다.**
+앱 연동이 맞는지 보려면 **`model_outputs_v0.2.json`과 비교해야 한다.**
 이건 배포 모델이 같은 이미지에서 실제로 내는 class/confidence/bbox이고,
 앱이 같은 숫자를 내면 전처리·디코드·NMS가 전부 맞는 것이다.
 (conf는 소수점 2자리, bbox는 ±2px 정도 차이는 정상이다 — 리사이즈 보간 차이)

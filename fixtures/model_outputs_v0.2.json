@@ -1,0 +1,371 @@
+{
+  "note": "배포 모델이 실제로 내는 출력. 앱 연동 검증용 기준값.",
+  "model": "insight_indoor15_v0.2_int8.tflite",
+  "model_sha_prefix": "5da9998f67bfb7c9",
+  "preprocess": {
+    "input_shape": [
+      1,
+      640,
+      640,
+      3
+    ],
+    "layout": "NHWC",
+    "color": "RGB",
+    "resize": "letterbox (비율 유지, 회색 114 패딩)",
+    "value_range": "0.0~1.0 (255로 나눔)"
+  },
+  "postprocess": {
+    "output_shape": [
+      1,
+      19,
+      8400
+    ],
+    "transposed": true,
+    "conf_thresholds": {
+      "0": 0.35,
+      "1": 0.35,
+      "2": 0.35,
+      "3": 0.35,
+      "4": 0.35,
+      "5": 0.35,
+      "6": 0.25,
+      "7": 0.25,
+      "8": 0.25,
+      "9": 0.35,
+      "10": 0.35,
+      "11": 0.35,
+      "12": 0.35,
+      "13": 0.35,
+      "14": 0.25
+    },
+    "nms_iou": 0.45,
+    "nms_scope": "클래스별 (다른 클래스끼리는 억제하지 않음)"
+  },
+  "images": [
+    {
+      "file": "fixture_01.jpg",
+      "width": 1920,
+      "height": 1080,
+      "letterbox": {
+        "scale": 0.333333,
+        "pad_x": 0.0,
+        "pad_y": 140.0
+      },
+      "detections": [
+        {
+          "class_id": 2,
+          "label": "pillar",
+          "confidence": 0.911,
+          "bbox_pixel": {
+            "left": 269.5,
+            "top": 2.8,
+            "right": 648.6,
+            "bottom": 588.4
+          }
+        },
+        {
+          "class_id": 14,
+          "label": "tactile_paving",
+          "confidence": 0.7519,
+          "bbox_pixel": {
+            "left": 1726.0,
+            "top": 587.7,
+            "right": 1920.0,
+            "bottom": 1078.8
+          }
+        }
+      ]
+    },
+    {
+      "file": "fixture_02.jpg",
+      "width": 1920,
+      "height": 1080,
+      "letterbox": {
+        "scale": 0.333333,
+        "pad_x": 0.0,
+        "pad_y": 140.0
+      },
+      "detections": [
+        {
+          "class_id": 2,
+          "label": "pillar",
+          "confidence": 0.7372,
+          "bbox_pixel": {
+            "left": 825.2,
+            "top": 0.9,
+            "right": 960.0,
+            "bottom": 162.6
+          }
+        },
+        {
+          "class_id": 0,
+          "label": "chair",
+          "confidence": 0.6441,
+          "bbox_pixel": {
+            "left": 0.8,
+            "top": 156.7,
+            "right": 193.9,
+            "bottom": 559.1
+          }
+        },
+        {
+          "class_id": 9,
+          "label": "door",
+          "confidence": 0.4186,
+          "bbox_pixel": {
+            "left": 1182.2,
+            "top": 3.7,
+            "right": 1275.9,
+            "bottom": 242.9
+          }
+        },
+        {
+          "class_id": 14,
+          "label": "tactile_paving",
+          "confidence": 0.2883,
+          "bbox_pixel": {
+            "left": 1228.9,
+            "top": 337.2,
+            "right": 1915.8,
+            "bottom": 618.6
+          }
+        },
+        {
+          "class_id": 14,
+          "label": "tactile_paving",
+          "confidence": 0.2617,
+          "bbox_pixel": {
+            "left": 1217.6,
+            "top": 327.5,
+            "right": 1716.6,
+            "bottom": 512.8
+          }
+        }
+      ]
+    },
+    {
+      "file": "fixture_03.jpg",
+      "width": 1920,
+      "height": 1080,
+      "letterbox": {
+        "scale": 0.333333,
+        "pad_x": 0.0,
+        "pad_y": 140.0
+      },
+      "detections": [
+        {
+          "class_id": 2,
+          "label": "pillar",
+          "confidence": 0.9411,
+          "bbox_pixel": {
+            "left": 1375.7,
+            "top": 0.0,
+            "right": 1641.6,
+            "bottom": 574.1
+          }
+        },
+        {
+          "class_id": 8,
+          "label": "elevator_door",
+          "confidence": 0.9318,
+          "bbox_pixel": {
+            "left": 621.6,
+            "top": 127.2,
+            "right": 798.1,
+            "bottom": 527.1
+          }
+        },
+        {
+          "class_id": 9,
+          "label": "door",
+          "confidence": 0.8249,
+          "bbox_pixel": {
+            "left": 402.1,
+            "top": 300.2,
+            "right": 512.7,
+            "bottom": 535.4
+          }
+        },
+        {
+          "class_id": 2,
+          "label": "pillar",
+          "confidence": 0.8184,
+          "bbox_pixel": {
+            "left": 1793.5,
+            "top": 0.0,
+            "right": 1919.2,
+            "bottom": 708.2
+          }
+        },
+        {
+          "class_id": 9,
+          "label": "door",
+          "confidence": 0.7702,
+          "bbox_pixel": {
+            "left": 238.1,
+            "top": 306.2,
+            "right": 348.3,
+            "bottom": 538.8
+          }
+        }
+      ]
+    },
+    {
+      "file": "fixture_04.jpg",
+      "width": 1920,
+      "height": 1080,
+      "letterbox": {
+        "scale": 0.333333,
+        "pad_x": 0.0,
+        "pad_y": 140.0
+      },
+      "detections": [
+        {
+          "class_id": 2,
+          "label": "pillar",
+          "confidence": 0.9424,
+          "bbox_pixel": {
+            "left": 368.5,
+            "top": 112.8,
+            "right": 636.0,
+            "bottom": 744.4
+          }
+        },
+        {
+          "class_id": 14,
+          "label": "tactile_paving",
+          "confidence": 0.9174,
+          "bbox_pixel": {
+            "left": 377.3,
+            "top": 871.6,
+            "right": 726.7,
+            "bottom": 1079.8
+          }
+        },
+        {
+          "class_id": 14,
+          "label": "tactile_paving",
+          "confidence": 0.7584,
+          "bbox_pixel": {
+            "left": 543.5,
+            "top": 818.4,
+            "right": 856.3,
+            "bottom": 872.7
+          }
+        },
+        {
+          "class_id": 14,
+          "label": "tactile_paving",
+          "confidence": 0.256,
+          "bbox_pixel": {
+            "left": 1114.8,
+            "top": 764.6,
+            "right": 1920.0,
+            "bottom": 1060.0
+          }
+        }
+      ]
+    },
+    {
+      "file": "fixture_05.jpg",
+      "width": 1920,
+      "height": 1080,
+      "letterbox": {
+        "scale": 0.333333,
+        "pad_x": 0.0,
+        "pad_y": 140.0
+      },
+      "detections": [
+        {
+          "class_id": 0,
+          "label": "chair",
+          "confidence": 0.9263,
+          "bbox_pixel": {
+            "left": 775.2,
+            "top": 465.4,
+            "right": 1320.8,
+            "bottom": 897.9
+          }
+        },
+        {
+          "class_id": 14,
+          "label": "tactile_paving",
+          "confidence": 0.9167,
+          "bbox_pixel": {
+            "left": 1549.1,
+            "top": 496.3,
+            "right": 1920.0,
+            "bottom": 1078.1
+          }
+        },
+        {
+          "class_id": 6,
+          "label": "stairs",
+          "confidence": 0.8228,
+          "bbox_pixel": {
+            "left": 20.0,
+            "top": 455.3,
+            "right": 1131.5,
+            "bottom": 1080.0
+          }
+        }
+      ]
+    },
+    {
+      "file": "fixture_06.jpg",
+      "width": 1920,
+      "height": 1080,
+      "letterbox": {
+        "scale": 0.333333,
+        "pad_x": 0.0,
+        "pad_y": 140.0
+      },
+      "detections": [
+        {
+          "class_id": 8,
+          "label": "elevator_door",
+          "confidence": 0.9762,
+          "bbox_pixel": {
+            "left": 1008.4,
+            "top": 490.7,
+            "right": 1065.5,
+            "bottom": 601.5
+          }
+        },
+        {
+          "class_id": 14,
+          "label": "tactile_paving",
+          "confidence": 0.7856,
+          "bbox_pixel": {
+            "left": 1388.6,
+            "top": 704.5,
+            "right": 1822.6,
+            "bottom": 900.0
+          }
+        },
+        {
+          "class_id": 3,
+          "label": "trash_can",
+          "confidence": 0.6864,
+          "bbox_pixel": {
+            "left": 829.8,
+            "top": 588.3,
+            "right": 886.9,
+            "bottom": 670.1
+          }
+        },
+        {
+          "class_id": 14,
+          "label": "tactile_paving",
+          "confidence": 0.613,
+          "bbox_pixel": {
+            "left": 1721.9,
+            "top": 882.8,
+            "right": 1920.0,
+            "bottom": 1080.0
+          }
+        }
+      ]
+    }
+  ]
+}

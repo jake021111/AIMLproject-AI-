@@ -25,6 +25,8 @@ export_out/
 !release/*.tflite
 !release/*.txt
 !release/*.md
+!release/archive/
+!release/archive/*.tflite
 
 # Python
 __pycache__/
@@ -38,7 +40,8 @@ venv/
 Thumbs.db
 
 # 프론트 전달용 테스트 픽스처 (AI Hub 원본 이미지 포함 — 공개 저장소 배포 금지)
-fixtures/
+fixtures/*
+!fixtures/model_outputs_v0.*.json
 
 # 스텁 모델 산출물 (scripts/export_stub_model.py)
 stub_models/
@@ -56,4 +59,4 @@ merged_dataset/
 dataset_v2/
 
 # 모델 기준 출력값은 이미지가 아니라 숫자라 공유해도 된다 (프론트 연동 검증용)
-!fixtures/model_outputs_v0.1.json
+!fixtures/model_outputs_v0.*.json
