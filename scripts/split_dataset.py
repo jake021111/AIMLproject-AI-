@@ -21,7 +21,37 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--train-ratio", type=float, default=0.7)
     parser.add_argument("--val-ratio", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--preserve-from",
+        type=Path,
+        default=None,
+        help="기존 분할 결과 경로(images/{train,val,test} 구조). 여기에 이미 있는 이미지는 "
+             "같은 split 에 그대로 둔다. 데이터를 추가하고 재학습할 때 예전 test 이미지가 "
+             "새 train 으로 새어 들어가는 것을 막아, 이전 모델과 지표를 공정하게 비교할 수 있다.",
+    )
     return parser.parse_args()
+
+
+def load_previous_split(path: Path) -> dict[str, str]:
+    """기존 분할에서 stem -> split 맵을 만든다."""
+    mapping: dict[str, str] = {}
+    for split in ("train", "val", "test"):
+        d = path / "images" / split
+        if not d.is_dir():
+            continue
+        for img in d.iterdir():
+            if img.suffix.lower() in IMG_EXTS:
+                mapping[img.stem] = split
+    return mapping
+
+
+def match_previous(stem: str, previous: dict[str, str]) -> str | None:
+    """merge_sources.py 가 붙인 '<접두사>_' 를 벗겨 가며 기존 split 을 찾는다."""
+    if stem in previous:
+        return previous[stem]
+    if "_" in stem:
+        return previous.get(stem.split("_", 1)[1])
+    return None
 
 
 def main() -> None:
@@ -33,16 +63,30 @@ def main() -> None:
     if not images:
         raise FileNotFoundError(f"이미지가 없습니다: {src_images}")
 
-    random.seed(args.seed)
-    random.shuffle(images)
+    previous = load_previous_split(args.preserve_from) if args.preserve_from else {}
+    splits: dict[str, list[Path]] = {"train": [], "val": [], "test": []}
 
-    n_train = int(len(images) * args.train_ratio)
-    n_val = int(len(images) * args.val_ratio)
-    splits = {
-        "train": images[:n_train],
-        "val": images[n_train : n_train + n_val],
-        "test": images[n_train + n_val :],
-    }
+    fresh = []
+    kept = 0
+    for img in images:
+        assigned = match_previous(img.stem, previous) if previous else None
+        if assigned:
+            splits[assigned].append(img)
+            kept += 1
+        else:
+            fresh.append(img)
+
+    if previous:
+        print(f"기존 분할 유지: {kept}장 / 새로 분할: {len(fresh)}장")
+
+    random.seed(args.seed)
+    random.shuffle(fresh)
+
+    n_train = int(len(fresh) * args.train_ratio)
+    n_val = int(len(fresh) * args.val_ratio)
+    splits["train"] += fresh[:n_train]
+    splits["val"] += fresh[n_train : n_train + n_val]
+    splits["test"] += fresh[n_train + n_val :]
 
     for split_name, split_images in splits.items():
         img_dir = args.dst / "images" / split_name

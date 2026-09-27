@@ -1,0 +1,75 @@
+insight AI 파트 진행 정리 (2026-09-27)
+=========================================
+
+[완료]
+
+1. 학습 v0.1
+ - 분할 train1086/val310/test156, veryHigh 오버샘플링 -> train 1520장
+ - YOLOv8n, EarlyStopping 83epoch, 31분 (RTX3050 4GB, batch8)
+ - test: mAP@0.5 0.826 (목표 0.70) / veryHigh recall 0.910 (목표 0.85)
+ - 15클래스 중 10개만 학습됨 (5개는 데이터 없음)
+ - 강함: trash_can .99 stairs .98 elevator_door .98 vending .97
+   약함: chair .41 signage_stand .56 (학습 인스턴스 부족)
+
+2. 앱 배포 모델
+ - release/insight_indoor15_v0.1_int8.tflite (INT8, 3.2MB)
+ - 입력 [1,640,640,3] NHWC/RGB/letterbox
+ - 출력 [1,19,8400] (4 bbox + 15 class, 전치됨)
+ - NMS 미포함 -> 앱에서 클래스별 IoU 0.45 수행
+ - fixture_05에서 정답 라벨과 좌표 거의 일치 확인
+
+3. 프론트 전달물
+ - docs/MODEL_INTERFACE.md : 입출력 계약 전문
+ - configs/labels.txt : 클래스 순서 (자동 생성)
+ - insight_frontend_delivery_20260927.zip (14MB)
+   = 모델 + 라벨 + 스펙 + 테스트이미지6장 + 정답JSON
+
+4. 환경 정리 / 버그 수정
+ - venv 분리: .venv-train(CUDA) / .venv-export(TF)
+ - batch 32->8 (4GB VRAM OOM)
+ - validate.py 클래스 라벨 밀림 버그 수정
+ - Windows는 Ultralytics TFLite export 미지원 -> ONNX 경유 신설
+ - 한글 경로에서 변환 실패 -> ASCII 임시폴더 경유로 우회
+
+5. GitHub 푸시 완료 (커밋 eb4a856)
+
+[INT8 결론 - 측정으로 확정]
+ Linux 컨테이너에서 full-integer INT8 변환 성공시킴.
+ (원인: Ultralytics AutoUpdate 가 런타임 pip install 로 torch 를 깨뜨림
+  -> 의존성 사전설치 + YOLO_AUTOINSTALL=false + litert-torch 추가로 해결)
+
+ 그런데 정확도 측정 결과 채택하지 않기로 함 (test 156장 기준):
+   best.pt        mAP@0.5 0.826  (기준)
+   hybrid INT8    mAP@0.5 0.816  손실 1.2%   <- 채택
+   full-integer   mAP@0.5 0.713  손실 13.7%  <- 탈락
+ CLAUDE.md 7.4 의 "손실 5% 초과 시 hybrid fallback" 규칙 적용.
+ full-integer 는 클래스 점수가 25단계로 뭉개짐(hybrid 는 12만단계).
+ 덤: hybrid 는 NHWC 라 문서 계약 그대로 -> 프론트 수정 0.
+
+[v0.2 학습 결과 - 배포 보류]
+ 데이터 보강 후 재학습 (train 3077장, 13클래스)
+ 동일 테스트셋 비교:  mAP@0.5 0.826 -> 0.883 (개선)
+ 그러나 veryHigh recall 0.910 -> 0.863 (후퇴)
+   tactile_paving 0.812 -> 0.748,  stairs 1.000 -> 0.898
+ 계단/점자블록 미탐은 낙상 위험 -> 안전 우선으로 v0.1 유지 결정.
+
+[다음 할 일]
+
+1. zip 드라이브 업로드 -> 프론트 전달   <- 제일 급함
+
+2. 데이터 보강 (조사 완료)
+ - ADE20K: escalator 42장 + counter 367장 추출
+   (세그멘테이션 -> bbox 변환 스크립트 필요)
+ - AI Hub 키오스크 이용자 행동 데이터 신청
+   -> 프레임에서 kiosk 재라벨링. 한국 도메인 일치
+ - COCO: person/table 추출 (스크립트 작성됨, 미실행)
+ - Open Images에는 escalator/kiosk 없음 (확인함)
+
+3. automatic_door 클래스 결정 필요
+ - 자동문/수동문 구분하는 공개 데이터셋 없음
+ - 시각적으로 유리문과 동일 -> door 병합 검토
+
+4. 보강 후 재학습 -> v1.0 배포
+
+[저장소]
+ github.com/hongik-2026/AIMLproject-AI

@@ -1,0 +1,48 @@
+# ADE20K (SceneParse150) -> insight 15-class 매핑
+#
+# ADE20K 의 annotation PNG 는 픽셀값이 곧 클래스 인덱스(1~150)다.
+# objectInfo150.csv 의 Idx 와 같은 값이며, 아래 ade_idx 가 그 값이다.
+#
+# 세그멘테이션이라 인스턴스 구분이 없다 -> connected component 로 분리해 bbox 를 만든다
+# (scripts/fetch_ade20k_subset.py).
+#
+# train 열은 ADE20K 학습셋에서 해당 클래스가 등장하는 이미지 수다(objectInfo150.csv 기준).
+# 우리 데이터의 빈틈을 메우는 데 쓸 수 있는 양을 가늠하는 용도.
+
+# 기본 매핑 — 개념이 명확히 일치하는 것만
+core:
+  - {ade_idx: 20,  ade_name: "chair",                 insight_id: 0,  insight: chair,       train: 3261}
+  - {ade_idx: 31,  ade_name: "armchair",              insight_id: 0,  insight: chair,       train: 1172}
+  - {ade_idx: 76,  ade_name: "swivel chair",          insight_id: 0,  insight: chair,       train: 324}
+  - {ade_idx: 16,  ade_name: "table",                 insight_id: 1,  insight: table,       train: 4269}
+  - {ade_idx: 65,  ade_name: "coffee table",          insight_id: 1,  insight: table,       train: 792}
+  - {ade_idx: 34,  ade_name: "desk",                  insight_id: 1,  insight: table,       train: 698}
+  - {ade_idx: 43,  ade_name: "column;pillar",         insight_id: 2,  insight: pillar,      train: 800}
+  - {ade_idx: 139, ade_name: "ashcan;trash can",      insight_id: 3,  insight: trash_can,   train: 671}
+  - {ade_idx: 13,  ade_name: "person",                insight_id: 5,  insight: person,      train: 5075}
+  - {ade_idx: 54,  ade_name: "stairs;steps",          insight_id: 6,  insight: stairs,      train: 880}
+  - {ade_idx: 60,  ade_name: "stairway;staircase",    insight_id: 6,  insight: stairs,      train: 564}
+  - {ade_idx: 97,  ade_name: "escalator",             insight_id: 7,  insight: escalator,   train: 42}
+  - {ade_idx: 15,  ade_name: "door;double door",      insight_id: 9,  insight: door,        train: 6666}
+  - {ade_idx: 46,  ade_name: "counter",               insight_id: 12, insight: counter,     train: 367}
+
+# 느슨한 매핑 — 개념이 어긋날 수 있어 --include-loose 를 줘야 쓰인다.
+# 왜 기본에서 뺐는지 이유를 같이 적어 둔다.
+loose:
+  - {ade_idx: 32,  ade_name: "seat",        insight_id: 0,  insight: chair,
+     why: "극장·경기장 좌석까지 포함. 실내 보행 중 만나는 '의자'와 형태가 다르다"}
+  - {ade_idx: 44,  ade_name: "signboard;sign", insight_id: 4, insight: signage_stand,
+     why: "벽걸이 간판·표지가 대부분. 우리 signage_stand 는 바닥에 선 입간판이다"}
+  - {ade_idx: 71,  ade_name: "countertop",  insight_id: 12, insight: counter,
+     why: "주방 상판. 안내 카운터와 시각적으로 다르다"}
+  - {ade_idx: 89,  ade_name: "booth;cubicle;stall;kiosk", insight_id: 11, insight: kiosk,
+     why: "서구권 부스/매대 개념. 한국 지하철·관공서의 터치스크린 키오스크가 아니다.
+           train 71장뿐이라 넣어도 이득이 적고 오탐 위험이 크다"}
+
+# ADE20K-150 에 대응이 아예 없는 클래스 (다른 경로로 확보해야 한다)
+unavailable:
+  - elevator_door    # AI Hub 186 에서 이미 확보됨 (train 254)
+  - automatic_door   # 어떤 공개 데이터셋도 자동문/수동문을 구분하지 않는다
+  - vending_machine  # AI Hub 186 에서 이미 확보됨 (train 309)
+  - tactile_paving   # AI Hub 186 에서 이미 확보됨 (train 502)
+  - kiosk            # loose 의 booth 가 유일한 후보이나 개념 불일치

@@ -48,3 +48,9 @@ coco_subset/
 *.zip
 .venv-train/
 delivery_frontend/
+
+# 보조 데이터셋 (용량 크고 재다운로드 가능)
+ade20k_raw/
+ade20k_subset/
+merged_dataset/
+dataset_v2/

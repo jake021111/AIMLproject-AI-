@@ -128,7 +128,18 @@ def main() -> None:
         else:
             data = tensor.astype(inp["dtype"])
 
-        interpreter.set_tensor(inp["index"], data[None, ...])
+        # 레이아웃 판별: 문서상 계약은 NHWC [1,640,640,3] 이지만,
+        # Ultralytics 공식 LiteRT export 는 NCHW [1,3,640,640] 로 내보낸다.
+        # 도구는 둘 다 읽을 수 있어야 어느 쪽이든 검증할 수 있다.
+        in_shape = list(inp["shape"])
+        batched = data[None, ...]
+        if in_shape[1] == 3 and in_shape[-1] != 3:
+            batched = batched.transpose(0, 3, 1, 2)
+            print(f"  입력 레이아웃: NCHW {in_shape}  (문서 계약은 NHWC)")
+        else:
+            print(f"  입력 레이아웃: NHWC {in_shape}")
+
+        interpreter.set_tensor(inp["index"], batched)
         interpreter.invoke()
         raw = interpreter.get_tensor(out["index"])[0]  # [C, anchors]
 

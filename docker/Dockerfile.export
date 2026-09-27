@@ -1,33 +1,55 @@
 # Ultralytics 공식 TFLite INT8 변환용 Linux 이미지.
 #
 # 왜 직접 만드나:
-#   ultralytics/ultralytics:latest-cpu 는 torch 설치가 깨져 있다
-#   (AttributeError: '_OpNamespace' 'aten' object has no attribute 'cholesky').
-#   Python 3.13 + 해당 torch 조합 문제로 보인다. 3.11 로 고정해 직접 구성한다.
+#   Ultralytics 의 TFLite export 는 Linux x86 / macOS 전용이라
+#   (exporter.py: `assert MACOS or (LINUX and not ARM64)`)
+#   Windows 개발 PC 에서는 이 컨테이너 안에서만 돌릴 수 있다.
 #
-# Ultralytics 의 TFLite export 는 Linux x86 / macOS 전용이라 Windows 개발 PC 에서는
-# 이 컨테이너 안에서만 `yolo export format=tflite int8=True` 를 쓸 수 있다.
+# ⚠️ 핵심: Ultralytics 의 AutoUpdate 를 절대 돌게 두지 말 것.
+#   export 도중 필요한 패키지가 없으면 Ultralytics 가 런타임에 pip install 을 실행한다.
+#     "requirements: Ultralytics requirement ['onnxruntime'] not found, attempting AutoUpdate..."
+#   이미 torch 가 로드된 프로세스에서 의존성이 교체되면 torch 의 C 확장이 깨져
+#   이어지는 import 가 이렇게 죽는다:
+#     AttributeError: '_OpNamespace' 'aten' object has no attribute 'cholesky'
+#   (공식 ultralytics/ultralytics:latest-cpu 이미지도 같은 이유로 실패한다.
+#    torch/torchvision 버전 불일치가 아니다 — 단독 import 는 멀쩡하다.)
+#
+#   -> export 경로가 쓰는 패키지를 **전부 미리** 설치하고,
+#      YOLO_AUTOINSTALL=false 로 런타임 설치를 막는다.
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# CPU 전용 torch (변환에는 GPU 가 필요 없고, CUDA 휠은 용량만 크다)
+# torch 와 나머지를 한 번의 pip 호출로 설치해 버전 해석을 한 번에 끝낸다.
+# (CPU 휠 인덱스를 우선하되, 거기 없는 패키지는 PyPI 에서 받는다.)
 RUN pip install --no-cache-dir \
         --index-url https://download.pytorch.org/whl/cpu \
-        torch torchvision
-
-# ultralytics + TFLite export 의존성
-RUN pip install --no-cache-dir \
+        --extra-index-url https://pypi.org/simple \
+        torch torchvision \
         ultralytics \
         tensorflow-cpu \
         tf_keras \
         onnx \
         onnxslim \
+        onnxruntime \
         onnx2tf \
         onnx-graphsurgeon \
         sng4onnx \
-        ai-edge-litert
+        ai-edge-litert \
+        litert-torch
+
+# AutoUpdate 차단 — 빠진 게 있으면 조용히 환경을 망가뜨리지 말고 즉시 실패하게 한다.
+ENV YOLO_AUTOINSTALL=false
+ENV YOLO_CONFIG_DIR=/tmp/Ultralytics
+
+# 빌드 시점에 import 가 실제로 되는지 확인한다 (런타임에 발견하면 늦다).
+# litert_torch: ultralytics 8.4 의 tflite export 는 LiteRT 경로로 바뀌어 이걸 import 한다
+# (pip 이름은 litert-torch, 모듈명은 litert_torch).
+RUN python -c "\
+from ultralytics import YOLO; \
+import torch, torch.distributed.fsdp, tensorflow, onnx2tf, onnxruntime, litert_torch; \
+print('deps ok')"
 
 WORKDIR /work

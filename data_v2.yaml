@@ -1,0 +1,28 @@
+# YOLOv8 dataset config — insight 실내 보행 보조 15-class
+# scripts/split_dataset.py 실행 후 생성되는 dataset/ 구조를 기준으로 한다.
+#
+#   dataset/
+#   ├── images/{train,val,test}/
+#   └── labels/{train,val,test}/   (YOLO txt 포맷: class_id cx cy w h, 0~1 정규화)
+
+path: ./dataset_v2
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: chair
+  1: table
+  2: pillar
+  3: trash_can
+  4: signage_stand
+  5: person
+  6: stairs
+  7: escalator
+  8: elevator_door
+  9: door
+  10: automatic_door
+  11: kiosk
+  12: counter
+  13: vending_machine
+  14: tactile_paving
