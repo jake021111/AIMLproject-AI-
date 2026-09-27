@@ -17,6 +17,14 @@ runs/
 *.onnx
 *.tflite
 *_saved_model/
+stub_models/
+export_out/
+
+# 배포용 모델만 예외로 올린다 (앱에 넣는 파일)
+!release/
+!release/*.tflite
+!release/*.txt
+!release/*.md
 
 # Python
 __pycache__/
@@ -28,3 +36,15 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# 프론트 전달용 테스트 픽스처 (AI Hub 원본 이미지 포함 — 공개 저장소 배포 금지)
+fixtures/
+
+# 스텁 모델 산출물 (scripts/export_stub_model.py)
+stub_models/
+.venv-export/
+coco_annotations/
+coco_subset/
+*.zip
+.venv-train/
+delivery_frontend/

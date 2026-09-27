@@ -1,0 +1,126 @@
+==========================================================
+insight 프로젝트 - AI 파트 진행 상황
+작성일: 2026-09-20
+==========================================================
+
+1. 오늘 진행한 작업 요약
+----------------------------------------------------------
+CLAUDE.md(§7)에 정의된 학습 파이프라인 스캐폴딩을 구성하고,
+실제 AI Hub 데이터셋을 조사·다운로드하여 YOLO 학습용 데이터로
+변환하는 것까지 완료함.
+
+
+2. 저장소
+----------------------------------------------------------
+- GitHub: https://github.com/hongik-2026/AIMLproject-AI
+- 총 2회 커밋 (파이프라인 스캐폴딩, 라벨 매핑 업데이트)
+
+
+3. 구축한 학습 파이프라인 (ai/ 디렉터리)
+----------------------------------------------------------
+configs/class_labels.yaml   15-class 정의 단일 소스 (Flutter class_labels.dart와 동기화 대상)
+data.yaml                    YOLO 데이터셋 설정 파일
+label_map.yaml                AI Hub / COCO taxonomy -> insight 15-class 매핑 테이블
+scripts/prepare_dataset.py    AI Hub 186 원본 라벨(JSON) -> YOLO txt 변환 스크립트
+scripts/split_dataset.py      train/val/test 70/20/10 분할 스크립트
+scripts/oversample_critical.py  veryHigh 클래스(계단/에스컬레이터/엘리베이터/점자블록) 오버샘플링
+train.py                     YOLOv8n 학습 스크립트 (SGD, lr0=0.01, freeze=10 등 CLAUDE.md §7.3 스펙)
+export.py                    best.pt -> TFLite INT8 변환 스크립트
+validate.py                  mAP + veryHigh 클래스 recall 검증 스크립트
+requirements.txt, README.md, .gitignore
+
+
+4. 데이터셋 조사 결과
+----------------------------------------------------------
+[채택] AI Hub "베리어프리존(장애물 없는 생활공간) 주행영상" (dataSetSn=186)
+  - 교통약자 시점으로 촬영된 실내외 데이터. "공간정보"(실내) 서브셋만 사용.
+  - 이미 YOLOv5 bbox 포맷과 유사한 구조 (bbox: rectangle 2점, polygon: 다각형 꼭짓점)
+
+[제외] AI Hub "인도(人道)보행 영상" (dataSetSn=189)
+  - 클래스명(의자/탁자/키오스크 등)은 겹치지만 실외 보도 전용 데이터라 도메인 불일치
+    (배경/조명/카메라 각도가 실내 매장·역사 환경과 상이) -> 학습에서 제외 결정
+
+[보조] COCO 2017
+  - person, chair, dining table 3개 클래스만 사용 (겹치는 클래스 한정)
+  - person, table은 AI Hub 186에 전혀 없어 COCO 단독 의존
+
+
+5. AI Hub 186 실제 라벨 스키마 조사 (2026-09-20)
+----------------------------------------------------------
+- 라벨 JSON 구조: {"images": {file_name, width, height},
+                    "annotations": [{"id": "rectangle_N"|"polygon_N",
+                    "category_id": <str>, "segmentation": [[x,y],...]}]}
+- rectangle: segmentation에 대각 꼭짓점 2개 (bbox)
+- polygon: 다각형 꼭짓점 목록 -> min/max로 bbox 변환
+
+- "_s" 접미사 파일의 정체를 실제 데이터로 확인함:
+  객체 좌표가 아니라 촬영 메타데이터(GPS, 촬영 주소, 날씨, 주/야간 등).
+  학습에는 불필요 -> 사용하지 않음.
+
+- 15-class 체계와 실제 category_id 매핑 확정:
+  chair          <- chair_one, chair_multi, chair_back, chair_circular, chair_handle
+  pillar         <- pillar
+  trash_can      <- trash_can
+  stairs         <- stair_normal, stair_broken
+  elevator_door  <- lift_door, lift
+  door           <- door_normal
+  vending_machine<- beverage_vending_machine
+  tactile_paving <- brailleblock_dot, brailleblock_line (+ broken 2종)
+  signage_stand  <- direction_sign_exit/right/left/straight
+  counter        <- reception_desk (신규 해결! 기존엔 매칭 데이터 없다고 판단했었음)
+
+- 여전히 해결 못한 클래스 (AI Hub 186에 대응 카테고리 없음):
+  escalator, automatic_door, kiosk
+  -> 직접 촬영 + 수동 라벨링으로 보강 필요 (추후 과제)
+  -> kiosk는 number_ticket_machine(번호표 발급기, 702건)이 가장 근접하지만
+     개념이 달라 확정 매핑은 보류함
+
+
+6. 실제 다운로드 및 변환 결과
+----------------------------------------------------------
+다운로드한 지역: "1.동부산실내_베리어프리객체_1" (부산지하철 센텀시티역 일대)
+  - Training: 라벨/원천 각 1,639쌍
+  - Validation: 라벨/원천 각 206쌍
+  - 총 1,845쌍 (완전 매칭 확인)
+
+prepare_dataset.py 실행 결과:
+  - 변환된 이미지: 1,552장
+  - 변환된 박스: 4,287개
+  - 매핑 객체가 하나도 없어 제외된 이미지: 293장
+
+클래스별 박스 개수 (이번 변환분 기준):
+  chair            85
+  pillar          628
+  trash_can       826
+  signage_stand    88
+  stairs          170
+  elevator_door   371
+  door            950
+  counter           1   <- 매우 부족, 데이터 보강 필요
+  vending_machine 465
+  tactile_paving  703
+  (table, person, escalator, automatic_door, kiosk: 0 - AI Hub 소스 없음)
+
+
+7. 남은 과제 (다음 작업 시 이어서 진행)
+----------------------------------------------------------
+[ ] counter 클래스 데이터 부족 문제 해결
+    - reception_desk가 많이 나올 만한 다른 지역(은행/병원/공공기관 등) 데이터 추가 확보 필요
+[ ] 서부산실내 지역 데이터 처리
+    - 라벨만 있고 원천 이미지(11GB)는 용량 문제로 아직 미다운로드
+    - 초기 파이프라인 검증 후, 필요 시 추가 다운로드 여부 결정
+[ ] escalator / automatic_door / kiosk 데이터 확보
+    - AI Hub에 전용 데이터셋 없음 확인됨 -> 직접 촬영 계획 필요
+[ ] COCO 2017에서 person / chair / dining table 서브셋 추출 스크립트 작성 (미착수)
+[ ] scripts/split_dataset.py 실행 (train/val/test 70/20/10 분할) - raw_dataset 준비 완료, 실행 전 단계
+[ ] scripts/oversample_critical.py 실행 (veryHigh 클래스 오버샘플링)
+[ ] train.py 로 실제 학습 시작
+[ ] export.py, validate.py 로 TFLite 변환 및 mAP/recall 검증
+    목표: mAP@0.5 >= 0.70, veryHigh 평균 recall >= 0.85
+
+
+8. 참고 링크
+----------------------------------------------------------
+- 프로젝트 저장소: https://github.com/hongik-2026/AIMLproject-AI
+- AI Hub 베리어프리존 데이터셋: https://aihub.or.kr/aihubdata/data/view.do?dataSetSn=186
+==========================================================

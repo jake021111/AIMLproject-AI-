@@ -1,0 +1,33 @@
+# Ultralytics 공식 TFLite INT8 변환용 Linux 이미지.
+#
+# 왜 직접 만드나:
+#   ultralytics/ultralytics:latest-cpu 는 torch 설치가 깨져 있다
+#   (AttributeError: '_OpNamespace' 'aten' object has no attribute 'cholesky').
+#   Python 3.13 + 해당 torch 조합 문제로 보인다. 3.11 로 고정해 직접 구성한다.
+#
+# Ultralytics 의 TFLite export 는 Linux x86 / macOS 전용이라 Windows 개발 PC 에서는
+# 이 컨테이너 안에서만 `yolo export format=tflite int8=True` 를 쓸 수 있다.
+FROM python:3.11-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# CPU 전용 torch (변환에는 GPU 가 필요 없고, CUDA 휠은 용량만 크다)
+RUN pip install --no-cache-dir \
+        --index-url https://download.pytorch.org/whl/cpu \
+        torch torchvision
+
+# ultralytics + TFLite export 의존성
+RUN pip install --no-cache-dir \
+        ultralytics \
+        tensorflow-cpu \
+        tf_keras \
+        onnx \
+        onnxslim \
+        onnx2tf \
+        onnx-graphsurgeon \
+        sng4onnx \
+        ai-edge-litert
+
+WORKDIR /work

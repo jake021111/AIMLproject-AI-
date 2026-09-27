@@ -1,0 +1,205 @@
+==========================================================
+insight 프로젝트 - AI 파트 진행 상황
+작성일: 2026-09-27
+==========================================================
+
+0. 이번 작업의 계기
+----------------------------------------------------------
+프론트(Flutter) 개발자가 "앱에서 테스트할 .tflite 파일이 있는지,
+클래스 순서/입출력 형식/테스트 이미지를 받을 수 있는지" 문의.
+저장소에 .tflite 가 전혀 없는 상태였으므로,
+(a) 프론트가 모델 완성까지 기다리지 않게 만드는 것과
+(b) 실제 학습을 착수하는 것을 함께 진행했다.
+
+
+1. 프론트 연동용 산출물 (신규)
+----------------------------------------------------------
+docs/MODEL_INTERFACE.md      모델 입출력 계약 전문. 프론트는 이 문서만 보면 된다.
+                             전처리(letterbox/RGB/양자화), 출력 파싱([1,19,8400] 전치),
+                             클래스별 conf 임계값, NMS, 좌표 역변환, 검증 체크리스트.
+configs/labels.txt           15클래스 순서 고정 파일 (class_labels.yaml 에서 자동 생성)
+scripts/gen_labels_txt.py    위 파일 생성기 (손으로 편집 금지)
+scripts/export_stub_model.py 학습 전 연동 검증용 스텁 tflite 생성
+scripts/onnx_to_tflite.py    ONNX -> TFLite INT8 변환 (Windows 우회 경로)
+scripts/yolo_onnx.py         bbox 정규화 포함 ONNX 내보내기
+scripts/verify_tflite.py     tflite 가 스펙대로 동작하는지 검증 (앱 로직을 파이썬으로 재현)
+scripts/make_test_fixtures.py 테스트 이미지 + 정답 JSON 생성
+scripts/fetch_coco_subset.py COCO 2017 -> person/chair/table 보강
+
+fixtures/ (생성 완료, git 제외)
+  - 이미지 6장 + expected_detections.json (정답 박스, 정규화/픽셀 좌표 둘 다)
+  - 커버 클래스 9종: chair, pillar, trash_can, signage_stand, stairs,
+                     elevator_door, door, vending_machine, tactile_paving
+  - GT 좌표는 오버레이를 그려 육안 검증함 (정확)
+  - AI Hub 데이터라 GitHub 에 올리지 않음 -> insight_fixtures_v1.zip (5.4MB) 로 별도 전달
+
+
+2. 데이터셋 진행
+----------------------------------------------------------
+split_dataset.py 실행 완료
+  train 1,086 / val 310 / test 156
+
+oversample_critical.py 실행 완료
+  veryHigh 포함 434장 복제 -> train 1,086 -> 1,520장
+  (veryHigh 포함 비율 40% -> 약 57%)
+
+클래스별 박스 수 (train 기준, 오버샘플링 전)
+  door 683, trash_can 558, tactile_paving 502, pillar 455, vending_machine 309,
+  elevator_door 254, stairs 129, chair 71, signage_stand 55, counter 1
+  table / person / escalator / automatic_door / kiosk : 0
+
+=> 현재 데이터로는 15개 중 10개 클래스만 학습된다 (v0.1).
+   출력 채널은 15클래스(19채널) 그대로 유지하므로 앱 코드는 바꿀 필요 없다.
+
+
+3. 학습 환경 구축
+----------------------------------------------------------
+기존 문제: 시스템 Python 이 3.14 + torch CPU 전용 -> 학습도 변환도 불가
+
+venv 를 둘로 분리했다 (요구 환경이 서로 다름).
+  .venv-train   Python 3.12 + torch 2.6.0+cu124 + ultralytics   (학습, GPU)
+  .venv-export  Python 3.12 + tensorflow 2.21 + onnx2tf + tf_keras + ai-edge-litert (변환)
+
+GPU: RTX 3050 Laptop, VRAM 4.29GB -> CUDA 정상 인식 확인
+
+batch 크기 변경: 32 -> 8
+  CLAUDE.md §7.3 의 batch=32 는 4GB VRAM 에서 640px 학습 시 OOM.
+  train.py 기본값과 CLAUDE.md 를 함께 8로 수정하고 근거를 주석에 남겼다.
+
+학습 출력 경로 수정
+  project 가 상대경로면 ultralytics 가 runs/detect/runs/<name> 으로 중첩시켜
+  README·validate.py 의 경로와 어긋났다. 절대경로로 변경.
+
+
+4. 학습 완료 (v0.1)
+----------------------------------------------------------
+스모크 테스트 (1 epoch): 정상, OOM 없음
+본 학습: 150 epochs 설정 -> EarlyStopping 으로 83 epoch 에서 종료 (best: epoch 63)
+소요: 31분 (약 20초/epoch), RTX 3050 4GB, batch 8
+
+=== test split 최종 지표 (156장 / 439박스) ===
+  mAP@0.5              0.826   (목표 >= 0.70)  달성
+  mAP@0.5:0.95         0.661
+  veryHigh 평균 recall  0.910   (목표 >= 0.85)  달성
+
+클래스별 (recall / mAP@0.5)
+  trash_can        0.972 / 0.989
+  stairs           1.000 / 0.978   *veryHigh*
+  elevator_door    0.919 / 0.977   *veryHigh*
+  vending_machine  0.935 / 0.973
+  pillar           0.885 / 0.906
+  door             0.857 / 0.789
+  tactile_paving   0.812 / 0.843   *veryHigh*
+  signage_stand    0.499 / 0.562   <- 학습 인스턴스 55개, 약함
+  chair            0.429 / 0.414   <- 학습 인스턴스 71개, 약함
+  table/person/escalator/automatic_door/kiosk/counter: 데이터 없어 지표 없음
+
+
+5. TFLite 변환에서 발견한 함정 (중요 — 전부 실측 확인)
+----------------------------------------------------------
+[1] Ultralytics 의 TFLite/LiteRT export 는 Windows 에서 동작하지 않는다.
+    exporter.py: assert MACOS or (LINUX and not ARM64)
+    -> ONNX 까지만 Ultralytics 로 뽑고 onnx2tf 로 잇는 경로를 만들었다.
+       export.py 가 Windows 를 자동 감지해 ONNX 모드로 동작한다.
+    참고: CLAUDE.md §15.4 의 "한 줄 export" 는 Linux/macOS 전제였다.
+
+[2] 경로에 한글이 있으면 변환이 실패한다.
+    ai_edge_litert / TF 의 C++ 레이어가 비ASCII 경로 파일을 못 연다.
+    이 프로젝트 경로(...\졸푸바오\ai)가 해당.
+    에러: Could not open '...\??Ǫ?ٿ?\..._float32.tflite'
+    -> 변환 스크립트가 ASCII 임시 디렉터리에서 작업하고 결과만 회수하도록 처리.
+
+[3] onnx2tf 의 -oiqt 직접 양자화 산출물은 실행되지 않는다.
+    생성된 INT8 tflite 6종 중 INT8 계열 전부가 로드 시 거부:
+      output->params.scale == 1. / 256 was not true. (LOGISTIC) failed to prepare
+    TFLite 커널이 sigmoid 의 INT8 출력 scale 을 정확히 1/256 으로 요구하는데
+    캘리브레이션 값이 미세하게 다르다.
+    -> onnx2tf 는 SavedModel 까지만 만들고, 양자화는 TensorFlow 자체 컨버터
+       (representative_dataset)로 수행. TF 컨버터는 sigmoid 를 1/256 으로 특수 처리한다.
+
+[4] bbox 는 0~1 로 정규화해서 내보내야 한다.
+    Ultralytics raw 출력은 bbox 가 letterbox 640 "픽셀"(0~640), 클래스 점수는 0~1 인데
+    둘이 [1, 4+nc, 8400] 한 텐서에 섞여 있다. TFLite INT8 은 per-tensor 양자화라
+    scale 이 640 쪽에 맞춰진다(실측 2.505).
+    -> scripts/yolo_onnx.py 가 ONNX 내보내기 시점에 bbox 를 imgsz 로 나눈다.
+       (torch.onnx.export 결과는 onnxslim 으로 단순화해야 onnx2tf 가 받는다.
+        안 하면 Reshape 추론 실패: "Cannot reshape a tensor with 409600 elements".)
+
+[5] full-integer INT8(가중치+활성 모두 INT8)은 이 Windows 경로에서 쓸 수 없다.
+    TF 컨버터로 만든 INT8 은 로드·실행은 되지만 출력이 무너진다:
+      bbox 4행 전부 0, 클래스 점수 최대 0.30 -> 0.16
+    같은 ONNX 의 FP32/FP16 은 정상이다 (bbox 0.0042~1.0014, 점수 0.3040).
+    따라서 정규화 위치 문제가 아니라 INT8 양자화 단계 자체의 문제다.
+    YOLOv8 의 bbox 브랜치(DFL: softmax + matmul)가 per-tensor INT8 에 취약한 것으로 보인다.
+
+    시도한 조합 (전부 동일하게 실패):
+      정규화를 TF 래퍼에서  + 입출력 int8
+      정규화를 TF 래퍼에서  + 입출력 float32
+      정규화를 ONNX 단계에서 + 입출력 int8
+      (대조군) 같은 ONNX 의 FP32 / FP16 -> 둘 다 정상
+
+    추가로 시도한 것:
+      onnx2tf -oiqt (flatbuffer_direct)      -> 로드 자체가 거부됨 (LOGISTIC assert)
+      onnx2tf -oiqt -tb tf_converter         -> 로드는 되나 동일하게 무너짐
+      supported_ops 를 풀어 float fallback   -> 동일
+
+    -> **해결: dynamic range 양자화(가중치 INT8 / 활성 float)가 정상 동작한다.**
+       크기 3.2MB 로 full-integer 와 사실상 동일하고, 출력도 정상이다.
+       CLAUDE.md §7.4 가 이미 "Hybrid Quantization(weight INT8)" 을 규정해 둔 경로다.
+       onnx_to_tflite.py 의 --quant int8_hybrid 가 이것이며 기본값이다.
+
+    -> NNAPI 가속이 필요한 full-integer 는 Linux 컨테이너에서 재시도 중.
+       ultralytics/ultralytics:latest-cpu 공식 이미지는 torch 가 깨져 있어 못 쓴다
+       (AttributeError: '_OpNamespace' 'aten' object has no attribute 'cholesky').
+       docker/Dockerfile.export 로 Python 3.11 기반 이미지를 직접 만든다.
+
+
+6. 검증 도구
+----------------------------------------------------------
+scripts/verify_tflite.py 가 앱이 할 일을 파이썬으로 그대로 재현한다.
+  텐서 shape/dtype/양자화 파라미터 출력 -> 문서와 대조
+  클래스 점수가 0~1 범위인지 (dequantize 검증)
+  bbox 가 0~1 범위인지 (정규화 검증)
+  최종 탐지 결과 + 시각화 저장
+
+float16 변환본 검증 결과 (정상 확인, 이것을 채택)
+  입력  [1,640,640,3] float32
+  출력  [1,84,8400] float32
+  bbox 범위 0.0042 ~ 1.0011   <- 정규화 정상
+  클래스 점수 0 ~ 0.3040
+  conf 0.15 로 낮춰 시각화한 결과, 실제 벤치 위치에 bench 박스가 정확히 잡힘
+  -> letterbox 역변환 / 전치 디코드 / NMS 전 구간 정상 동작 확인
+     (pillar 를 cup 으로 잡는 건 COCO 에 기둥 클래스가 없어서 생긴 오분류로, 정상)
+
+
+7. 문서 갱신
+----------------------------------------------------------
+CLAUDE.md
+  §7.3 batch=32 -> 8 (근거 주석 포함)
+  §14 리스크 표에 2건 추가: Windows TFLite export 불가 / 비ASCII 경로 INT8 변환 실패
+README.md  현재 상태, venv 구성, Windows 변환 경로, 변환 함정 3종 반영
+validate.py  버그 수정 — metrics.box.r 은 평가 데이터에 등장한 클래스만 담는 축약 배열이라
+             enumerate 인덱스를 class id 로 쓰면 라벨이 밀린다.
+             (15개 중 5개가 비어 있는 현 상황에서 그대로 드러나는 버그)
+             ap_class_index 로 실제 class id 를 얻도록 수정하고,
+             지표를 못 낸 클래스를 명시적으로 출력하도록 추가.
+
+
+8. 남은 과제
+----------------------------------------------------------
+[x] 학습 완료 + validate.py 지표 확인 (mAP@0.5 0.826, veryHigh recall 0.910)
+[x] best.pt -> ONNX(정규화) -> TFLite INT8 변환 + verify_tflite.py 검증 완료
+    fixture_05 에서 GT 와 거의 일치: stairs GT[0,451,1140,1080] vs 모델[0,448,1111,1073]
+[x] 프론트 전달 패키지 구성 (insight_frontend_delivery_*.zip)
+[ ] full-integer INT8(NNAPI) 변환 — Linux 컨테이너에서 재시도 중
+[ ] counter 클래스 데이터 확보 (현재 박스 1개)
+[ ] COCO 에서 person / table 보강 (fetch_coco_subset.py 작성 완료, 미실행)
+[ ] escalator / automatic_door / kiosk 직접 촬영 + 라벨링
+[ ] 서부산실내 지역 원천 이미지(11GB) 추가 다운로드 여부 결정
+
+
+9. 참고 링크
+----------------------------------------------------------
+- 프로젝트 저장소: https://github.com/hongik-2026/AIMLproject-AI
+- AI Hub 베리어프리존 데이터셋: https://aihub.or.kr/aihubdata/data/view.do?dataSetSn=186
+==========================================================

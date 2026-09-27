@@ -1,0 +1,375 @@
+=== non-s ===
+{
+  "info": {
+    "Year": 2020,
+    "version": "4.5.6",
+    "date_created": "2022/01/11 15:12:47.175702"
+  },
+  "images": {
+    "file_name": "DC0101_2020-10-21 091210_00.jpg",
+    "height": 1080,
+    "width": 1920,
+    "date_captured": "2020-10-21 091210",
+    "collector_id": "DC0101"
+  },
+  "annotations": [
+    {
+      "id": "polygon_1",
+      "processor_id": "kst",
+      "category_id": "floor_normal",
+      "segmentation": [
+        [
+          54.2,
+          646.1
+        ],
+        [
+          99.36,
+          638.6
+        ],
+        [
+          107.21,
+          611.91
+        ],
+        [
+          148.42,
+          611.91
+        ],
+        [
+          148.42,
+          685.3
+        ],
+        [
+          565.21,
+          816.38
+        ],
+        [
+          652.33,
+          805.78
+        ],
+        [
+          717.09,
+          825.8
+        ],
+        [
+          714.73,
+          853.27
+        ],
+        [
+          997.3,
+          947.85
+        ],
+        [
+          1076.97,
+          930.98
+        ],
+        [
+          1303.81,
+          999.27
+        ],
+        [
+          1298.71,
+          1054.21
+        ],
+        [
+          1399.21,
+          1080.0
+        ],
+        [
+          0.0,
+          1080.0
+        ],
+        [
+          0.0,
+          868.67
+        ],
+        [
+          56.97,
+          854.06
+        ]
+      ]
+    },
+    {
+      "id": "polygon_2",
+      "processor_id": "kst",
+      "category_id": "brailleblock_dot",
+      "segmentation": [
+        [
+          663.71,
+          867.79
+        ],
+        [
+          603.28,
+          885.06
+        ],
+        [
+          692.76,
+          916.46
+        ],
+        [
+          761.83,
+          900.37
+        ]
+      ]
+    },
+    {
+      "id": "polygon_3",
+      "processor_id": "kst",
+      "category_id": "wall",
+      "segmentation": [
+        [
+          1363.81,
+          0.0
+        ],
+        [
+          1319.01,
+          1051.71
+        ],
+        [
+          1410.95,
+          1080.0
+        ],
+        [
+          1920.0,
+          1080.0
+        ],
+        [
+          1920.0,
+          0.0
+        ]
+      ]
+    },
+    {
+      "id": "polygon_4",
+      "processor_id": "kst",
+      "category_id": "wall",
+      "segmentation": [
+        [
+          19.49,
+          0.0
+        ],
+        [
+          22.97,
+          858.52
+        ],
+        [
+          47.58,
+          852.66
+        ],
+        [
+          47.58,
+          638.2
+        ],
+        [
+          99.14,
+          633.52
+        ],
+        [
+          101.48,
+          603.05
+        ],
+        [
+          146.02,
+          600.7
+        ],
+        [
+          150.7,
+          600.7
+        ],
+        [
+          153.05,
+          683.91
+        ],
+        [
+          564.38,
+          809.3
+        ],
+        [
+          566.72,
+          161.25
+        ],
+        [
+          741.33,
+          115.55
+        ],
+        [
+          736.64,
+          436.64
+        ],
+        [
+          776.48,
+          437.81
+        ],
+        [
+          772.97,
+          544.45
+        ],
+        [
+          734.3,
+          547.97
+        ],
+        [
+          726.09,
+          857.34
+        ],
+        [
+          987.42,
+          939.38
+        ],
+        [
+          993.28,
+          562.03
+        ],
+        [
+          931.17,
+          550.31
+        ],
+        [
+          935.86,
+          430.78
+        ],
+        [
+          997.97,
+          431.95
+        ],
+        [
+          1003.83,
+          41.72
+        ],
+        [
+          1137.33,
+          0.0
+        ]
+      ]
+    },
+    {
+      "id": "rectangle_1",
+      "processor_id": "kst",
+      "category_id": "lift_door",
+      "segmentation": [
+        [
+          641.91,
+          361.64
+        ],
+        [
+          729.8,
+          822.5799999999999
+        ]
+      ]
+    },
+    {
+      "id": "rectangle_2",
+      "processor_id": "kst",
+      "category_id": "lift_door",
+      "segmentation": [
+        [
+          1079.5,
+          307.05
+        ],
+        [
+          1331.7,
+          992.1700000000001
+        ]
+      ]
+    },
+    {
+      "id": "rectangle_3",
+      "processor_id": "kst",
+      "category_id": "lift",
+      "segmentation": [
+        [
+          562.88,
+          117.98
+        ],
+        [
+          738.8,
+          859.13
+        ]
+      ]
+    },
+    {
+      "id": "rectangle_4",
+      "processor_id": "kst",
+      "category_id": "lift",
+      "segmentation": [
+        [
+          986.2,
+          0.0
+        ],
+        [
+          1357.5,
+          1052.32
+        ]
+      ]
+    }
+  ],
+  "category": [
+    {
+      "id": "floor_normal",
+      "name": "복도 바닥 정상",
+      "supercategory": "floor"
+    },
+    {
+      "id": "brailleblock_dot",
+      "name": "점형블록",
+      "supercategory": "brailleblock"
+    },
+    {
+      "id": "wall",
+      "name": "벽",
+      "supercategory": "wall"
+    },
+    {
+      "id": "wall",
+      "name": "벽",
+      "supercategory": "wall"
+    },
+    {
+      "id": "lift_door",
+      "name": "승강기 출입문",
+      "supercategory": "lift_door"
+    },
+    {
+      "id": "lift_door",
+      "name": "승강기 출입문",
+      "supercategory": "lift_door"
+    },
+    {
+      "id": "lift",
+      "name": "승강기 (시설)",
+      "supercategory": "lift"
+    },
+    {
+      "id": "lift",
+      "name": "승강기 (시설)",
+      "supercategory": "lift"
+    }
+  ]
+}
+
+=== _s ===
+{
+  "Header": {
+    "inout": "실외",
+    "area": "(48060) 부산 해운대구 센텀남대로 지하 76 부산지하철 센텀시티역",
+    "daynight": "주간",
+    "startaddr": "(48060) 부산 해운대구 센텀남대로 지하 76 부산지하철 센텀시티역",
+    "endaddr": "",
+    "weather": "흐림"
+  },
+  "Body": {
+    "id": "DC0101",
+    "nowtime": "2020-10-21 09:12:10",
+    "snapshotname": "DC0101_2020-10-21 091210_00.jpg",
+    "sensorlist": "null",
+    "gps": {
+      "lat": "35.168786",
+      "lot": "129.135602"
+    },
+    "flatness": "0",
+    "guideline": {
+      "guidelinelx": "null",
+      "guidelinerx": "null",
+      "guideliney": "null"
+    }
+  }
+}

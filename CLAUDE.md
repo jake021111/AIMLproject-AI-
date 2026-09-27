@@ -356,7 +356,8 @@ model = YOLO("yolov8n.pt")   # COCO 2017 80-class 사전학습 가중치
 model.train(
     data="data.yaml",
     imgsz=640,
-    batch=32,
+    batch=8,                # ⚠️ 개발 PC(RTX 3050 Laptop, VRAM 4GB) 기준. 640px에서 32는 OOM.
+                            #    VRAM 8GB+ / Colab T4 라면 16~32로 올린다.
     epochs=150,
     patience=20,            # Early Stopping
     optimizer="SGD",
@@ -566,6 +567,8 @@ CREATE TABLE warning_logs (
 | YUV420 변환 비용 | Dart 루프로 하면 프레임당 수십 ms | isolate 처리 + 해상도 720p 제한 |
 | 신규 클래스 데이터 부족 | kiosk, tactile_paving 등은 COCO에 없음 | AI Hub 데이터 의존 + 직접 촬영 보강 검토 |
 | iOS 지원 | ARCore 미지원, ARKit Depth는 LiDAR 기기만 | iOS는 bbox 비례식 경로만 우선 지원 |
+| **Windows TFLite export 불가** | Ultralytics `format=tflite/litert` 는 Linux x86·macOS 전용 (`exporter.py` assert). 개발 PC가 Windows | ONNX 까지 Ultralytics 로 뽑고 `scripts/onnx_to_tflite.py`(onnx2tf) 로 이어서 변환 |
+| **비ASCII 경로에서 INT8 변환 실패** | `ai_edge_litert` C++ 인터프리터가 한글 경로(`…/졸푸바오/ai`) 파일을 못 연다 | `onnx_to_tflite.py` 가 ASCII 임시 디렉터리에서 변환 후 결과만 회수 |
 
 ---
 

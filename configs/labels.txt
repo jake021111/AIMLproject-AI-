@@ -1,0 +1,15 @@
+chair
+table
+pillar
+trash_can
+signage_stand
+person
+stairs
+escalator
+elevator_door
+door
+automatic_door
+kiosk
+counter
+vending_machine
+tactile_paving
